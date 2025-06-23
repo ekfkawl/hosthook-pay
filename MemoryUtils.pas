@@ -202,15 +202,13 @@ begin
     InstrSize:= 7;
     Disp32:= Read<Integer>(Address + 3);
   end
-  else
-  begin
+  else begin
     InstrSize:= 6;
     Disp32:= Read<Integer>(Address + 2);
   end;
 
   Result:= Pointer(Address + InstrSize + UInt64(Disp32));
 end;
-
 
 initialization
   SingletonInstance:= nil;

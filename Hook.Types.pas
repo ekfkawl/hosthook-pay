@@ -47,8 +47,7 @@ type
     property AppName: WideString read FAppName write FAppName;
   public
     class function EpochMilliNow: Int64; static;
-    class function UnixMilliToDateTime(EpochMs: Int64): TDateTime; static;
-    function IsPast: Boolean;
+    function IsRecentNotification: Boolean;
   end;
 
 implementation
@@ -56,23 +55,29 @@ implementation
 { TNotification }
 
 class function TNotification.EpochMilliNow: Int64;
+begin
+  Result:= DateTimeToUnix(Now, False) * 1000 + MilliSecondOf(Now);
+end;
+
+function UnixMilliToDateTime(const epochMs: Int64): TDateTime;
 var
-  LNow: TDateTime;
+  SecPart: Int64;
+  MsPart: Word;
 begin
-  LNow:= Now;
-  Result:= DateTimeToUnix(LNow, False) * 1000 + MilliSecondOf(LNow);
+  SecPart:= epochMs div 1000;
+  MsPart:= epochMs mod 1000;
+
+  Result:= UnixToDateTime(SecPart, False);
+  Result:= Result + (MsPart / MSecsPerDay);
 end;
 
-class function TNotification.UnixMilliToDateTime(EpochMs: Int64): TDateTime;
+function IsWithinLastSeconds(a, b: TDateTime; Seconds: Integer): Boolean;
 begin
-  Result:= UnixToDateTime(EpochMs div 1000);
-  Result:= IncMilliSecond(Result, EpochMs mod 1000);
+  Result:= (a >= IncSecond(b, -Seconds)) and (a <= b);
 end;
 
-function TNotification.IsPast: Boolean;
-const
-  GraceMs = 30 * 1000;
+function TNotification.IsRecentNotification: Boolean;
 begin
-  Result:= TimeStamp < (EpochMilliNow - GraceMs);
+  Result:= IsWithinLastSeconds(UnixMilliToDateTime(FTimestamp), Now, 30);
 end;
 end.

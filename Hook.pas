@@ -3,27 +3,55 @@
 interface
 
 uses
-  Winapi.Windows, System.SysUtils, System.Classes, System.StrUtils, Winapi.Messages, System.Math, REST.Json, System.DateUtils,
-  MemoryUtils, TlHelp32Utils, Hook.Types;
+  Winapi.Windows, System.SysUtils, System.Classes, System.StrUtils, Winapi.Messages, System.Math, REST.Json, System.DateUtils, Generics.Collections,
+  MemoryUtils, TlHelp32Utils, DbgUtils, Hook.Types;
 
-procedure HookNotifications(OrigAddr: Pointer);
-procedure Writeln(const Fmt: string; const Args: array of const);
+procedure HookNotifications1(OrigAddr: Pointer);
+procedure HookNotifications2(HookAddr: UInt64; OrigAddr: Pointer);
 
 implementation
 
-var
-  pOrigNotifications: function(Unused1, Buffer: UInt64): Pointer;
-
-function HijacNotifications(Unused1, Buffer: UInt64): Pointer;
 const
   KEY_TAG: WideString = '{"key":"';
+
+var
+  pOrigNotifications1: function(Unused1, Buffer: UInt64): Pointer;
+  pOrigNotifications2: procedure(Buffer, Unused1: UInt64);
+
+  DupKeyFilter: TDictionary<WideString, Byte>;
+  TitleFilter: TDictionary<WideString, Byte>;
+  PackageFilter: TDictionary<WideString, Byte>;
+
+function IsValidNotification(Noti: TNotification): Boolean;
+begin
+  Result:= False;
+
+  if DupKeyFilter.Count > 1_000 then
+    DupKeyFilter.Clear;
+
+  if not DupKeyFilter.TryAdd(Noti.Key, 0) then
+    Exit;
+
+  if not Noti.IsRecentNotification then
+    Exit;
+
+  if not TitleFilter.ContainsKey(Noti.Title) then
+    Exit;
+
+  if not PackageFilter.ContainsKey(Noti.PackageName) then
+    Exit;
+
+  Result:= True;
+end;
+
+function HijacNotifications(Unused1, Buffer: UInt64): Pointer;
 var
   pBuffer: PWideChar;
   Noti: TNotification;
   i: UInt32;
   FindOffset: Boolean;
 begin
-  Result:= pOrigNotifications(Unused1, Buffer);
+  Result:= pOrigNotifications1(Unused1, Buffer);
 
   try
     if Buffer <= 0 then
@@ -51,13 +79,11 @@ begin
     pBuffer:= Ptr(BufferBase + i);
     Noti:= TJson.JsonToObject<TNotification>(pBuffer);
     try
-      if Noti.PackageName <> 'com.apple.MobileSMS' then
+      if not IsValidNotification(Noti) then
         Exit;
 
-      if Noti.IsPast then
-        Exit;
+      Writeln('1: %s%s%s%s%s', [#13#10, Noti.Title, #13#10, Noti.Text, #13#10]);
 
-      Writeln('%s%s%s', [Noti.Title, #13#10, Noti.Text]);
     finally
       Noti.Free;
     end;
@@ -65,25 +91,75 @@ begin
   end;
 end;
 
-procedure HookNotifications(OrigAddr: Pointer);
+procedure HookNotifications1(OrigAddr: Pointer);
 begin
-  pOrigNotifications:= PPointer(OrigAddr)^;
+  PackageFilter.Add('com.apple.MobileSMS', 0);
+
+  pOrigNotifications1:= PPointer(OrigAddr)^;
   TThread.CreateAnonymousThread(
     procedure
     begin
       while True do
       begin
-        Sleep(1); 
+        Sleep(1);
         if PPointer(OrigAddr)^ <> @HijacNotifications then
           PPointer(OrigAddr)^:= @HijacNotifications;
       end;
     end).Start;
 end;
 
-procedure Writeln(const Fmt: string; const Args: array of const);
+procedure HijacNotifications2(Buffer, Unused1: UInt64);
+var
+  pBuffer: PWideChar;
+  Noti: TNotification;
 begin
-  {$IFDEF DEBUG}
-  System.Writeln(Format(Fmt, Args));
-  {$ENDIF}
+  pOrigNotifications2(Buffer, Unused1);
+
+  try
+    if Buffer <= 0 then
+      Exit;
+
+    const BufferBase = PUInt64(PUInt64(PUInt64(Buffer)^)^ + $10)^;
+    if BufferBase <= 0 then
+      Exit;
+
+    if not CompareMem(Ptr(BufferBase), Ptr(UInt64(KEY_TAG)), SizeOf(KEY_TAG)) then
+      Exit;
+
+    pBuffer:= Ptr(BufferBase);
+    Noti:= TJson.JsonToObject<TNotification>(pBuffer);
+    try
+      if not IsValidNotification(Noti) then
+        Exit;
+
+      Writeln('2: %s%s%s%s%s', [#13#10, Noti.Title, #13#10, Noti.Text, #13#10]);
+
+    finally
+      Noti.Free;
+    end;
+  except;
+  end;
 end;
+
+procedure HookNotifications2(HookAddr: UInt64; OrigAddr: Pointer);
+begin
+  pOrigNotifications2:= OrigAddr;
+  with TMemoryHelper.GetInstance do
+  begin
+    const Chain = AllocAbove(UInt64(OrigAddr));
+    JumpHook(Chain, @HijacNotifications2);
+    CallHook(HookAddr, Ptr(Chain));
+  end;
+end;
+
+initialization
+  DupKeyFilter:= TDictionary<WideString, Byte>.Create;
+  TitleFilter:= TDictionary<WideString, Byte>.Create;
+  PackageFilter:= TDictionary<WideString, Byte>.Create;
+
+finalization
+  DupKeyFilter.Free;
+  TitleFilter.Free;
+  PackageFilter.Free;
+
 end.
