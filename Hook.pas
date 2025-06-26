@@ -4,15 +4,16 @@ interface
 
 uses
   Winapi.Windows, System.SysUtils, System.Classes, System.StrUtils, Winapi.Messages, System.Math, REST.Json, System.DateUtils, Generics.Collections,
-  MemoryUtils, TlHelp32Utils, DbgUtils, Hook.Types;
+  MemoryUtils, TlHelp32Utils, DbgUtils, Hook.Types, Hook.Config, RedisUtils;
 
-procedure HookNotifications1(OrigAddr: Pointer);
-procedure HookNotifications2(HookAddr: UInt64; OrigAddr: Pointer);
+procedure HookNotifications(HookAddr: UInt64; OrigAddr: Pointer);
+procedure LoadFilters;
 
 implementation
 
 const
   KEY_TAG: WideString = '{"key":"';
+  TOPIC = 'HostHookPayTopic';
 
 var
   pOrigNotifications1: function(Unused1, Buffer: UInt64): Pointer;
@@ -21,6 +22,8 @@ var
   DupKeyFilter: TDictionary<WideString, Byte>;
   TitleFilter: TDictionary<WideString, Byte>;
   PackageFilter: TDictionary<WideString, Byte>;
+
+  Redis: TRedis;
 
 function IsValidNotification(Noti: TNotification): Boolean;
 begin
@@ -44,71 +47,7 @@ begin
   Result:= True;
 end;
 
-function HijacNotifications(Unused1, Buffer: UInt64): Pointer;
-var
-  pBuffer: PWideChar;
-  Noti: TNotification;
-  i: UInt32;
-  FindOffset: Boolean;
-begin
-  Result:= pOrigNotifications1(Unused1, Buffer);
-
-  try
-    if Buffer <= 0 then
-      Exit;
-      
-    const BufferBase = PUInt64(Buffer + $30)^;
-    if BufferBase <= 0 then
-      Exit;
-
-    i:= 8;
-    FindOffset:= False;
-    while i <= $200 do
-    begin
-      if CompareMem(Ptr(BufferBase + i), Ptr(UInt64(KEY_TAG)), SizeOf(KEY_TAG)) then
-      begin
-        FindOffset:= True;
-        break;
-      end;
-      Inc(i, 4);
-    end;
-
-    if not FindOffset then
-      Exit;
-
-    pBuffer:= Ptr(BufferBase + i);
-    Noti:= TJson.JsonToObject<TNotification>(pBuffer);
-    try
-      if not IsValidNotification(Noti) then
-        Exit;
-
-      Writeln('1: %s%s%s%s%s', [#13#10, Noti.Title, #13#10, Noti.Text, #13#10]);
-
-    finally
-      Noti.Free;
-    end;
-  except;
-  end;
-end;
-
-procedure HookNotifications1(OrigAddr: Pointer);
-begin
-  PackageFilter.Add('com.apple.MobileSMS', 0);
-
-  pOrigNotifications1:= PPointer(OrigAddr)^;
-  TThread.CreateAnonymousThread(
-    procedure
-    begin
-      while True do
-      begin
-        Sleep(1);
-        if PPointer(OrigAddr)^ <> @HijacNotifications then
-          PPointer(OrigAddr)^:= @HijacNotifications;
-      end;
-    end).Start;
-end;
-
-procedure HijacNotifications2(Buffer, Unused1: UInt64);
+procedure HijacNotifications(Buffer, Unused1: UInt64);
 var
   pBuffer: PWideChar;
   Noti: TNotification;
@@ -132,23 +71,53 @@ begin
       if not IsValidNotification(Noti) then
         Exit;
 
-      Writeln('2: %s%s%s%s%s', [#13#10, Noti.Title, #13#10, Noti.Text, #13#10]);
+      Redis.Publish(TOPIC, pBuffer);
 
+      Writeln('2: %s', [#13#10 + Noti.Title + #13#10 + Noti.Text, #13#10]);
     finally
       Noti.Free;
     end;
-  except;
+  except
+    on E: Exception do
+      Writeln('Error: %s', [E.ClassName + ' - ' + E.Message]);
   end;
 end;
 
-procedure HookNotifications2(HookAddr: UInt64; OrigAddr: Pointer);
+procedure HookNotifications(HookAddr: UInt64; OrigAddr: Pointer);
 begin
   pOrigNotifications2:= OrigAddr;
   with TMemoryHelper.GetInstance do
   begin
     const Chain = AllocAbove(UInt64(OrigAddr));
-    JumpHook(Chain, @HijacNotifications2);
+    JumpHook(Chain, @HijacNotifications);
     CallHook(HookAddr, Ptr(Chain));
+  end;
+end;
+
+procedure LoadFilters;
+var
+  PackageList, TitleList: TList<WideString>;
+begin
+  GetPackageFilter(PackageList);
+  try
+    for var s in PackageList do
+    begin
+      Writeln('Add PackageFilter: %s', [s]);
+      PackageFilter.TryAdd(s, 0);
+    end;
+  finally
+    PackageList.Free;
+  end;
+
+  GetTitleFilter(TitleList);
+  try
+    for var s in TitleList do
+    begin
+      Writeln('Add TitleFilter: %s', [s]);
+      TitleFilter.TryAdd(s, 0);
+    end;
+  finally
+    TitleList.Free;
   end;
 end;
 
@@ -156,10 +125,12 @@ initialization
   DupKeyFilter:= TDictionary<WideString, Byte>.Create;
   TitleFilter:= TDictionary<WideString, Byte>.Create;
   PackageFilter:= TDictionary<WideString, Byte>.Create;
+  Redis:= TRedis.Create;
 
 finalization
   DupKeyFilter.Free;
   TitleFilter.Free;
   PackageFilter.Free;
+  Redis.Free;
 
 end.
