@@ -73,7 +73,7 @@ begin
 
       Redis.Publish(TOPIC, pBuffer);
 
-      Writeln('2: %s', [#13#10 + Noti.Title + #13#10 + Noti.Text, #13#10]);
+      Writeln('%s', [#13#10 + Noti.Title + #13#10 + Noti.Text, #13#10]);
     finally
       Noti.Free;
     end;

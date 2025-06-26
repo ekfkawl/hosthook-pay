@@ -36,7 +36,7 @@ begin
   if not TFile.Exists(CUSTOM_SETTINGS_JSON) then
     Exit;
 
-  JSONValue:= TJSONObject.ParseJSONValue(TFile.ReadAllText(CUSTOM_SETTINGS_JSON), False, True);
+  JSONValue:= TJSONObject.ParseJSONValue(TFile.ReadAllText(CUSTOM_SETTINGS_JSON, TEncoding.UTF8), False, True);
   try
     if not (JSONValue is TJSONObject) then
       Exit;
@@ -95,7 +95,7 @@ begin
     Exit;
   end;
 
-  JSONValue:= TJSONObject.ParseJSONValue(TFile.ReadAllText(CUSTOM_SETTINGS_JSON), False, True);
+  JSONValue:= TJSONObject.ParseJSONValue(TFile.ReadAllText(CUSTOM_SETTINGS_JSON, TEncoding.UTF8), False, True);
   try
     if (JSONValue is TJSONObject) then
     begin
@@ -120,7 +120,7 @@ begin
     Exit;
   end;
 
-  JSONValue:= TJSONObject.ParseJSONValue(TFile.ReadAllText(CUSTOM_SETTINGS_JSON), False, True);
+  JSONValue:= TJSONObject.ParseJSONValue(TFile.ReadAllText(CUSTOM_SETTINGS_JSON, TEncoding.UTF8), False, True);
   try
     if (JSONValue is TJSONObject) then
     begin
