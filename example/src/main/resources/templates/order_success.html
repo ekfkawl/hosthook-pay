@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>주문 성공</title>
+</head>
+<body>
+<h1>주문이 완료되었습니다</h1>
+<p>주문번호: <strong th:text="${orderResponse.orderNumber}"></strong></p>
+<p>상태: <strong th:text="${orderResponse.status}"></strong></p>
+<p>주문금액: <strong th:text="${orderResponse.orderAmount}"></strong>원</p>
+<p><a th:href="@{/order}">새 주문하기</a></p>
+<p><a th:href="@{/order/status}">주문 상태 확인</a></p>
+</body>
+</html>

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>주문 상태</title>
+</head>
+<body>
+<h1>주문 상태</h1>
+
+<div th:if="${message}">
+    <p style="color:green;" th:text="${message}"></p>
+</div>
+<div th:if="${error}">
+    <p style="color:red;" th:text="${error}"></p>
+</div>
+
+<p>주문번호: <strong th:text="${orderResponse.orderNumber}"/></p>
+<p>상태: <strong th:text="${orderResponse.status}"/></p>
+<p>주문금액: <strong th:text="${orderResponse.orderAmount}"/>원</p>
+<p>주문일시: <strong th:text="${orderResponse.orderDate}"/></p>
+
+<div th:if="${orderResponse.status == 'PENDING'}">
+    <form th:action="@{'/order/cancel/' + ${orderResponse.orderNumber}}"
+          method="post">
+        <button type="submit">🛑 주문 취소</button>
+    </form>
+</div>
+
+<p><a th:href="@{/order/status}">다른 주문 조회</a></p>
+<p><a th:href="@{/order}">새 주문하기</a></p>
+</body>
+</html>

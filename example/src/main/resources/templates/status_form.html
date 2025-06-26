@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>주문 상태 확인</title>
+</head>
+<body>
+<h1>주문 상태 확인</h1>
+<form th:action="@{/order/status}" th:object="${orderNumberRequest}" method="post">
+    <div>
+        <label>주문번호:
+            <input type="text" th:field="*{orderNumber}" />
+        </label>
+        <div th:if="${#fields.hasErrors('orderNumber')}"
+             th:errors="*{orderNumber}"></div>
+    </div>
+    <div th:if="${error}">
+        <p style="color:red;" th:text="${error}"></p>
+    </div>
+    <button type="submit">확인</button>
+</form>
+<p><a th:href="@{/order}">새 주문하기</a></p>
+</body>
+</html>

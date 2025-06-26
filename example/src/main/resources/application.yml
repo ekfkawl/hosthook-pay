@@ -1,0 +1,20 @@
+spring:
+  datasource:
+    url: jdbc:sqlite:./orders.db
+    driver-class-name: org.sqlite.JDBC
+  thymeleaf:
+    cache: false
+  devtools:
+    livereload:
+      enabled: true
+    restart:
+      enabled: true
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    database-platform: org.hibernate.community.dialect.SQLiteDialect
+    properties:
+      hibernate:
+        dialect: org.hibernate.community.dialect.SQLiteDialect
+        # show_sql: true
