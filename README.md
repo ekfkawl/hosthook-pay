@@ -89,4 +89,7 @@ C:\hosthookpay.json:
 모든 앱에 대한 알림을 핸들링하는 프로시저를 후킹합니다.
 ![캡처](https://github.com/user-attachments/assets/4261d91d-a1be-416f-b4a4-d4787ae12adc)
 
+<br/>
 
+## 📦 Third-Party Libraries
+* https://github.com/danieleteti/delphiredisclient
