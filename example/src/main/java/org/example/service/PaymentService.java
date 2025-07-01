@@ -33,14 +33,8 @@ public class PaymentService {
 
     @Transactional
     public void processDeposit(TransactionInfo ti) {
-        Optional<Order> opt = Optional.ofNullable(matchPendingOrder(ti));
-        if (opt.isEmpty()) {
-            throw new IllegalStateException("매칭 가능한 PENDING 상태 주문이 없습니다: " + ti.getSenderName() + ", " + ti.getAmount());
-        }
-
-        Order order = opt.get();
+        Order order = matchPendingOrder(ti);
         order.setStatus(Order.Status.COMPLETED);
-
         log.info("결제 처리 완료: {}", ti.toString());
     }
 }
