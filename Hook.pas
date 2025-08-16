@@ -16,7 +16,7 @@ const
   TOPIC = 'HostHookPayTopic';
 
 var
-  pOrigNotifications: function(Unused1: Pointer): Pointer;
+  pOrigNotifications: function(Unused1, Unused2: Pointer): Pointer;
 
   DupKeyFilter: TDictionary<WideString, Byte>;
   TitleFilter: TDictionary<WideString, Byte>;
@@ -46,15 +46,15 @@ begin
   Result:= True;
 end;
 
-function HijacNotifications(Unused1: Pointer): Pointer;
+function HijacNotifications(Unused1, Unused2: Pointer): Pointer;
 var
   Res: Pointer;
   pBuffer: PWideChar;
   Noti: TNotification;
 begin
-  Res:= pOrigNotifications(Unused1);
+  Res:= pOrigNotifications(Unused1, Unused2);
 
-  pBuffer:= Ptr(UInt64(Res) + $C);
+  pBuffer:= Ptr(PUInt64(UInt64(Res) + $8)^ + $C);
   try
     if not CompareMem(pBuffer, Ptr(UInt64(KEY_TAG)), SizeOf(KEY_TAG)) then
       Exit(Res);
