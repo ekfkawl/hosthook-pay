@@ -16,8 +16,7 @@ const
   TOPIC = 'HostHookPayTopic';
 
 var
-  pOrigNotifications1: function(Unused1, Buffer: UInt64): Pointer;
-  pOrigNotifications2: procedure(Buffer, Unused1: UInt64);
+  pOrigNotifications: function(Unused1: Pointer): Pointer;
 
   DupKeyFilter: TDictionary<WideString, Byte>;
   TitleFilter: TDictionary<WideString, Byte>;
@@ -47,29 +46,23 @@ begin
   Result:= True;
 end;
 
-procedure HijacNotifications(Buffer, Unused1: UInt64);
+function HijacNotifications(Unused1: Pointer): Pointer;
 var
+  Res: Pointer;
   pBuffer: PWideChar;
   Noti: TNotification;
 begin
-  pOrigNotifications2(Buffer, Unused1);
+  Res:= pOrigNotifications(Unused1);
 
+  pBuffer:= Ptr(UInt64(Res) + $C);
   try
-    if Buffer <= 0 then
-      Exit;
+    if not CompareMem(pBuffer, Ptr(UInt64(KEY_TAG)), SizeOf(KEY_TAG)) then
+      Exit(Res);
 
-    const BufferBase = PUInt64(PUInt64(PUInt64(Buffer)^)^ + $10)^;
-    if BufferBase <= 0 then
-      Exit;
-
-    if not CompareMem(Ptr(BufferBase), Ptr(UInt64(KEY_TAG)), SizeOf(KEY_TAG)) then
-      Exit;
-
-    pBuffer:= Ptr(BufferBase);
     Noti:= TJson.JsonToObject<TNotification>(pBuffer);
     try
       if not IsValidNotification(Noti) then
-        Exit;
+        Exit(Res);
 
       Redis.Publish(TOPIC, pBuffer);
 
@@ -81,16 +74,18 @@ begin
     on E: Exception do
       Writeln('Error: %s', [E.ClassName + ' - ' + E.Message]);
   end;
+
+  Result:= Res;
 end;
 
 procedure HookNotifications(HookAddr: UInt64; OrigAddr: Pointer);
 begin
-  pOrigNotifications2:= OrigAddr;
+  pOrigNotifications:= PPointer(OrigAddr)^;
   with TMemoryHelper.GetInstance do
   begin
     const Chain = AllocAbove(UInt64(OrigAddr));
     JumpHook(Chain, @HijacNotifications);
-    CallHook(HookAddr, Ptr(Chain));
+    CallHook(HookAddr, Ptr(Chain), 5);
   end;
 end;
 

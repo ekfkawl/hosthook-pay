@@ -78,6 +78,6 @@ end;
 
 function TNotification.IsRecentNotification: Boolean;
 begin
-  Result:= IsWithinLastSeconds(UnixMilliToDateTime(FTimestamp), Now, 60);
+  Result:= IsWithinLastSeconds(UnixMilliToDateTime(FTimestamp), Now, 180);
 end;
 end.

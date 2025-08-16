@@ -22,12 +22,12 @@ begin
   with TAOBScanner.GetInstance do
   begin
     try
-      var ScanStartAddr:= UInt64(GetModuleHandle('YourPhone.Notifications.WinRT.dll'));
-      var ScanEndAddr:= ScanStartAddr + TProcessHelper.GetInstance.GetModuleSize('YourPhone.Notifications.WinRT.dll');
+      var ScanStartAddr:= UInt64(GetModuleHandle('YourPhone.Connectivity.Bluetooth.Managed.dll'));
+      var ScanEndAddr:= ScanStartAddr + TProcessHelper.GetInstance.GetModuleSize('YourPhone.Connectivity.Bluetooth.Managed.dll');
       UpdateScanStructure(ScanStartAddr, ScanEndAddr);
-      TAOBScanner.GetInstance.AOBSCAN('48 8D 15 ?? ?? ?? ?? 48 8D 4C 24 28 E8 ?? ?? ?? ?? 90 F0 48', 0, procedure(Address: UInt64)
+      TAOBScanner.GetInstance.AOBSCAN('BF 01 00 00 00 B8 03 00 00 00 83 7E 10 00', 0, procedure(Address: UInt64)
       begin
-        HookNotifications(Address + $C, TMemoryHelper.GetInstance.GetCallAddress(Address + $C));
+        HookNotifications(Address - $11, TMemoryHelper.GetInstance.GetLeaAddress(Address - $11));
       end);
     except
       on E: EAOBScanError do
