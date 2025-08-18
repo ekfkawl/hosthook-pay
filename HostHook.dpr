@@ -22,12 +22,12 @@ begin
   with TAOBScanner.GetInstance do
   begin
     try
-      var ScanStartAddr:= UInt64(GetModuleHandle('YourPhone.Notifications.Managed.dll'));
-      var ScanEndAddr:= ScanStartAddr + TProcessHelper.GetInstance.GetModuleSize('YourPhone.Notifications.Managed.dll');
+      var ScanStartAddr:= UInt64(GetModuleHandle('Windows.Web.dll'));
+      var ScanEndAddr:= ScanStartAddr + TProcessHelper.GetInstance.GetModuleSize('Windows.Web.dll');
       UpdateScanStructure(ScanStartAddr, ScanEndAddr);
-      TAOBScanner.GetInstance.AOBSCAN('48 8D 4E 38 48 8B D0 FF 15 ?? ?? ?? ?? FF 15 ?? ?? ?? ?? 4C 8B F0', 0, procedure(Address: UInt64)
+      TAOBScanner.GetInstance.AOBSCAN('0F 1F 44 00 00 83 65 FC 00 48 8D 4D F0 4C 8B C3 48 89 45 F0 33 D2 89 ?? F8 E8 ?? ?? ?? ?? 8B ?? 85 C0 0F 88', 0, procedure(Address: UInt64)
       begin
-        HookNotifications(Address - $A, TMemoryHelper.GetInstance.GetLeaAddress(Address - $A));
+        HookNotifications(Address - $7, TMemoryHelper.GetInstance.GetLeaAddress(Address - $7));
       end);
 
     except
