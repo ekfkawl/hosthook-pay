@@ -1,4 +1,6 @@
 # HostHook Pay
+![hosthook-pay-thumbnail](https://github.com/user-attachments/assets/e8ce7b1f-3879-4141-83df-9167f89a787f)
+
 HostHook Pay는 Microsoft에서 제공하는 [Phone Link](https://www.microsoft.com/ko-kr/windows/sync-across-your-devices?r=1)
  호스트 프로세스를 후킹하여 휴대폰 알림을 가로채고, 무통장·계좌이체 입금을 자동으로 확인 가능하도록 도와주는 라이브러리입니다.  
 개발자는 입금 SMS 알림을 Redis Pub/Sub을 통해 자신의 서비스에 전달받아 주문 결제 로직만 구현하면 됩니다.
