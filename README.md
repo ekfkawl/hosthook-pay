@@ -7,7 +7,7 @@ HostHook Pay는 Microsoft에서 제공하는 [Phone Link](https://www.microsoft.
 
 ## ⚙️ 라이브러리 사용 환경 조건
 * Windows 10 (1809, Oct 2018 Update) 이상
-* 휴대폰과 연결(Phone Link) 버전 1.25052.76.0 이상
+* 휴대폰과 연결(Phone Link) 버전 1.25052.76.0 ~ 1.25072.79.0 (최신)
 * PC와 iPhone 모두 Bluetooth 지원
 * iPhone iOS 14.0 이상
 * <s>Android 기기는 테스트 안됨❌️</s>
@@ -86,8 +86,11 @@ C:\hosthookpay.json:
 <br/>
 
 ## 🔐 후킹 지점
-모든 앱에 대한 알림을 핸들링하는 프로시저를 후킹합니다.
-![캡처](https://github.com/user-attachments/assets/4261d91d-a1be-416f-b4a4-d4787ae12adc)
+1.25071.54.0 이상 버전의 업데이트로 인해, 기존의 패턴 구조가 변경된 것을 확인하였습니다.
+현재는 문자열의 백업 버퍼를 검색하는 용도의 함수인 `combase.WindowsGetStringRawBuffer` 호출 부를 인라인 후킹합니다.
+<img width="1070" height="329" alt="image" src="https://github.com/user-attachments/assets/43e0b9a8-a7cc-46bb-a7e1-393040463998" />
+<img width="918" height="56" alt="image" src="https://github.com/user-attachments/assets/6b87c5ab-5eb2-49e3-b95a-fb54932512ae" />
+
 
 <br/>
 
